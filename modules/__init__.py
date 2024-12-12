@@ -1,3 +1,3 @@
 from .tiny_shakespeare_datamodule import TinyShakeSpeare
-from .nanoGPT_module import NanoGPT
+from .GPT_module import GPT
 from .bigram_module import BigramLanguageModel

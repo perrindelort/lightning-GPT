@@ -1,5 +1,7 @@
 *.code-workspace
+*.toml
 /*/__pycache__/
+
 
 data/
 results/

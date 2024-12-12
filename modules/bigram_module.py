@@ -11,10 +11,12 @@ class BigramLanguageModel(LightningModule):
     def __init__(self, config: Namespace, vocab_size: int):
         super().__init__()
         self.config = config
-        self.token_embedding_table = nn.Embedding(vocab_size, vocab_size)
+        self.token_embedding_table = nn.Embedding(vocab_size, self.config.n_embeddings)
+        self.lm_head = nn.Linear(self.config.n_embeddings, vocab_size)
 
     def forward(self, x):
-        logits = self.token_embedding_table(x)
+        token_embeddings = self.token_embedding_table(x)  # (B, T, C)
+        logits = self.lm_head(token_embeddings)  # (B, T, C)
         return logits
 
     def _calculate_loss(self, batch, mode="train"):

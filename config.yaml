@@ -1,11 +1,11 @@
-batch_size : 32
-block_size : 8
+batch_size : 64 
+block_size : 256 # Maximum context length
 dropout : 0.2
 eval_interval : 300
-eval_iters : 200
-lr : 0.01
+head_size : 64
+lr : 0.0003
 max_epochs : 3_000
 max_steps : -1 
 n_embeddings : 384
-n_head : 6
-n_layer : 6
+n_heads : 6
+n_layers : 6
