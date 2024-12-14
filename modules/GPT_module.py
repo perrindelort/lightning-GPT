@@ -5,6 +5,7 @@ import torch.nn.functional as F
 from lightning import LightningModule
 from argparse import Namespace
 from einops import rearrange
+from typing import Optional
 
 from layers import Block
 
@@ -16,16 +17,10 @@ class GPT(LightningModule):
         self.token_embedding_table = nn.Embedding(vocab_size, config.n_embeddings)
         self.position_embeddings_table = nn.Embedding(config.block_size, config.n_embeddings)
         self.blocks = nn.Sequential(
-            *[
-                Block(config.n_embeddings, config.block_size, config.n_heads, config.dropout)
-                for _ in range(config.n_layers)
-            ],
+            *[Block(config.n_embeddings, config.block_size, config.n_heads, config.dropout) for _ in range(config.n_layers)],
         )
         self.ln_f = nn.LayerNorm(config.n_embeddings)
         self.lm_head = nn.Linear(self.config.n_embeddings, vocab_size)
-
-        self.last_val_loss = float("inf")
-        self.last_generated_sample = float("-inf")
 
     def configure_model(self):
         self.apply(self._init_weights)
@@ -41,13 +36,11 @@ class GPT(LightningModule):
     def forward(self, idx):
         B, T = idx.shape
         token_embeddings = self.token_embedding_table(idx)  # (B, T, C)
-        pos_embeddings = self.position_embeddings_table(
-            torch.arange(T, device=self.device)
-        )  # (T, C))
+        pos_embeddings = self.position_embeddings_table(torch.arange(T, device=self.device))  # (T, C))
         x = token_embeddings + pos_embeddings  # (B, T, C)
         x = self.blocks(x)  # (B, T, C)
         x = self.ln_f(x)  # (B, T, C)
-        logits = self.lm_head(token_embeddings)  # (B, T, C)
+        logits = self.lm_head(x)  # (B, T, C)
         return logits
 
     def _calculate_loss(self, batch, mode="train"):
@@ -82,22 +75,14 @@ class GPT(LightningModule):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.config.lr)
         return optimizer
 
-    def on_validation_end(self):
-        current_val_loss = self.trainer.callback_metrics["val_loss"]
-        if (
-            current_val_loss < self.last_val_loss
-            and self.trainer.current_epoch - self.last_generated_sample >= 5
-        ):
-            context = torch.zeros((1, 1), dtype=torch.long, device=self.device)
-            generated_text = self.trainer.datamodule.decode(
-                self.generate(context, max_new_tokens=500)[0].tolist()
-            )
-            self.trainer.logger._experiment.add_text(
-                "Generated sample", generated_text, self.trainer.current_epoch
-            )
+    def on_fit_start(self):
+        # Log an example without any training
+        self.eval()
+        self._generate_and_log_example(epoch=-1)
+        self.train()
 
-        self.last_generated_sample = self.trainer.current_epoch
-        self.last_val_loss = current_val_loss
+    def on_validation_end(self):
+        self._generate_and_log_example()
 
     def generate(self, idx, max_new_tokens):
         # idx is (B, T) array of indices
@@ -113,3 +98,9 @@ class GPT(LightningModule):
             idx_next = torch.multinomial(probs, num_samples=1)  # (B, 1)
             idx = torch.cat((idx, idx_next), dim=1)  # (B, T+1)
         return idx
+
+    def _generate_and_log_example(self, max_new_tokens: int = 1_000, epoch: Optional[int] = None):
+        epoch = self.trainer.current_epoch if epoch is None else epoch
+        context = torch.zeros((1, 1), dtype=torch.long, device=self.device)
+        generated_text = self.trainer.datamodule.decode(self.generate(context, max_new_tokens=max_new_tokens)[0].tolist())
+        self.trainer.logger._experiment.add_text("Generated sample", generated_text, epoch)
