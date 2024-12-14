@@ -9,15 +9,15 @@ from utils import ConfigParser
 if __name__ == "__main__":
     parser = ConfigParser()
     config = parser.parse_args()
-
-    seed_everything(42)
+    torch.set_float32_matmul_precision(config.float32_matmul_precision)
+    seed_everything(1337)
 
     data_module = TinyShakeSpeare(config=config)
     data_module.prepare_data()
     data_module.setup(stage=None)
     # model = BigramLanguageModel(config=config, vocab_size=data_module.vocab_size)
     model = GPT(config=config, vocab_size=data_module.vocab_size)
-    # model = torch.compile(model)
+    # model = torch.compile(model) # Python < 3.12
 
     results_dir = Path(__file__).parent / "results"
     if not results_dir.exists():
@@ -27,7 +27,7 @@ if __name__ == "__main__":
         max_epochs=config.max_epochs,
         max_steps=config.max_steps,
         limit_train_batches=config.eval_interval,
-        limit_val_batches=config.eval_interval,
+        # limit_val_batches=config.eval_interval,
     )
 
     trainer.fit(model, data_module)

@@ -12,6 +12,8 @@ class ConfigParser(ArgumentParser):
         with open(config_file, "r") as file:
             config = yaml.safe_load(file)
 
+        self.add_argument("--float32_matmul_precision", type=str, default=config.get("float32_matmul_precision"))
+
         self.add_argument("--batch_size", type=int, default=config.get("batch_size"))
         self.add_argument("--block_size", type=int, default=config.get("block_size"))
         self.add_argument("--dropout", type=int, default=config.get("dropout"))

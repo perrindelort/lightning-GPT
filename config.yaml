@@ -1,3 +1,7 @@
+# Misc
+float32_matmul_precision : "medium" # Default is highest if you GPU doesn't have Tensor Cores 
+
+# Network
 batch_size : 64 
 block_size : 256 # Maximum context length
 dropout : 0.2
