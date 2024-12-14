@@ -13,6 +13,7 @@ from layers import Block
 class GPT(LightningModule):
     def __init__(self, config: Namespace, vocab_size: int):
         super().__init__()
+        self.save_hyperparameters()
         self.config = config
         self.token_embedding_table = nn.Embedding(vocab_size, config.n_embeddings)
         self.position_embeddings_table = nn.Embedding(config.block_size, config.n_embeddings)
@@ -82,7 +83,8 @@ class GPT(LightningModule):
         self.train()
 
     def on_validation_end(self):
-        self._generate_and_log_example()
+        if not self.trainer.sanity_checking:
+            self._generate_and_log_example()
 
     def generate(self, idx, max_new_tokens):
         # idx is (B, T) array of indices
