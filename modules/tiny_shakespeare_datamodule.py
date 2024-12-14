@@ -1,4 +1,5 @@
 import requests
+import os
 import torch
 
 from pathlib import Path
@@ -35,9 +36,7 @@ class TinyShakeSpeare(LightningDataModule):
         file = self.data_dir / "tiny_shakespeare.txt"
         if not file.exists():
             try:
-                response = requests.get(
-                    "https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt"
-                )
+                response = requests.get("https://raw.githubusercontent.com/karpathy/char-rnn/master/data/tinyshakespeare/input.txt")
                 response.raise_for_status()  # Ensure the request was successful
                 with open(file, "w", encoding="utf-8") as f:
                     f.write(response.text)
@@ -51,29 +50,73 @@ class TinyShakeSpeare(LightningDataModule):
         chars = sorted(list(set(text)))
         self.vocab_size = len(chars)
 
-        stoi = {ch: i for i, ch in enumerate(chars)}
-        itos = {i: ch for i, ch in enumerate(chars)}
-
-        encode = lambda s: [stoi[c] for c in s]
-        decode = lambda l: "".join([itos[i] for i in l])
-        setattr(self, "encode", encode)
-        setattr(self, "decode", decode)
+        self._set_encode(chars)
+        self._set_decode(chars)
 
         if stage == "fit":
-            data = torch.tensor(encode(text), dtype=torch.long)
+            data = torch.tensor(self.encode(text), dtype=torch.long)
             n = int(0.9 * len(data))
             train_data = data[:n]
             val_data = data[n:]
 
             self.train_dataset = TextDataset(
-                train_data, block_size=self.config.block_size
+                train_data,
+                block_size=self.config.block_size,
             )
-            self.val_dataset = TextDataset(val_data, block_size=self.config.block_size)
+            self.val_dataset = TextDataset(
+                val_data,
+                block_size=self.config.block_size,
+            )
+
+    def _set_encode(self, chars):
+        stoi = {ch: i for i, ch in enumerate(chars)}
+        encode = lambda s: [stoi[c] for c in s]
+        setattr(self, "encode", encode)
+
+    def _set_decode(self, chars):
+        itos = {i: ch for i, ch in enumerate(chars)}
+        decode = lambda l: "".join([itos[i] for i in l])
+        setattr(self, "decode", decode)
+
+    def encode(self):
+        """
+        Defined in '_set_encode' used in 'setup' method because of the prepare_data / setup hooks optimization regarding ranks and devices if the training were to be parallelized.
+        """
+        pass
+
+    def decode(self, txt):
+        """
+        Defined in '_set_decode' used in 'setup' method because of the prepare_data / setup hooks optimization regarding ranks and devices if the training were to be parallelized.
+        """
+        pass
+
+    def get_num_workers(self):
+        """
+        Retrieve the total number of cores, leaving it 2 free
+
+        Returns:
+            int: Number of cores that can work for the DataLoader
+        """
+        num_cpus = os.cpu_count()
+        if num_cpus is None:
+            return 0
+        return max(1, num_cpus - 2)
 
     def train_dataloader(self):
         return DataLoader(
-            self.train_dataset, batch_size=self.config.batch_size, shuffle=True
+            self.train_dataset,
+            batch_size=self.config.batch_size,
+            num_workers=self.get_num_workers(),
+            persistent_workers=True,
+            pin_memory=True,
+            shuffle=True,
         )
 
     def val_dataloader(self):
-        return DataLoader(self.val_dataset, batch_size=self.config.batch_size)
+        return DataLoader(
+            self.val_dataset,
+            batch_size=self.config.batch_size,
+            num_workers=self.get_num_workers(),
+            persistent_workers=True,
+            pin_memory=True,
+        )
