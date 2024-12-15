@@ -12,21 +12,27 @@ from utils import ConfigParser
 if __name__ == "__main__":
     parser = ConfigParser()
     config = parser.parse_args()
+
+    # TODO : add flag in order to detect if GPU has tensor cores
     torch.set_float32_matmul_precision(config.float32_matmul_precision)
-    seed_everything(1337)
+    if config.seed:
+        seed_everything(config.seed)
 
     data_module = TinyShakeSpeare(config=config)
     data_module.prepare_data()
     data_module.setup(stage=None)
-    # model = BigramLanguageModel(config=config, vocab_size=data_module.vocab_size)
-    model = GPT(config=config, vocab_size=data_module.vocab_size)
-    # model = torch.compile(model) # Python < 3.12
+
+    model_class = GPT if config.model == "GPT" else BigramLanguageModel
+    model = model_class(config=config, vocab_size=data_module.vocab_size)
+    model_name = model._get_name()
+
+    # model = torch.compile(model)  # Python < 3.11
 
     results_dir = Path(__file__).parent / "results"
     if not results_dir.exists():
         results_dir.mkdir()
 
-    logs_dir = results_dir / model._get_name()
+    logs_dir = results_dir / model_name
 
     logger = TensorBoardLogger(
         save_dir=logs_dir,
@@ -58,6 +64,19 @@ if __name__ == "__main__":
         max_steps=config.max_steps,
         limit_train_batches=config.eval_interval,
         # limit_val_batches=config.eval_interval,
+        inference_mode=True,
     )
 
-    trainer.fit(model, data_module)
+    if config.load_model == "":
+        trainer.fit(model, data_module)
+    else:
+        model_to_load = Path(__file__).parent / "checkpoints" / config.load_model
+        model = model_class.load_from_checkpoint(model_to_load)
+        model.eval()
+        generator = model.infinite_generation(decode_fn=data_module.decode, temperature=1.0)
+        print("Press any key to stop generation.\n")
+        try:
+            for char in generator:
+                print(char, end="", flush=True)  # Print each character without newline and flush the output
+        except KeyboardInterrupt:
+            print("\nGeneration interrupted by user.")

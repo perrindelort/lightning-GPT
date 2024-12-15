@@ -1,7 +1,6 @@
 import yaml
 
 from argparse import ArgumentParser
-
 from pathlib import Path
 
 
@@ -13,6 +12,10 @@ class ConfigParser(ArgumentParser):
             config = yaml.safe_load(file)
 
         self.add_argument("--float32_matmul_precision", type=str, default=config.get("float32_matmul_precision"))
+        self.add_argument("--load_model", type=str, default="")
+        self.add_argument("--seed", type=lambda value: None if value == "None" else value, default=config.get("seed"), help="Seed for reproducibility. Input 'None' for no seeding.")
+
+        self.add_argument("--model", type=str, choices=["GPT", "BigramLanguageModel"], default=config.get("model"))
 
         self.add_argument("--batch_size", type=int, default=config.get("batch_size"))
         self.add_argument("--block_size", type=int, default=config.get("block_size"))

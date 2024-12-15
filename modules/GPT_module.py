@@ -69,9 +69,6 @@ class GPT(LightningModule):
     def validation_step(self, batch, batch_idx=0):
         self._calculate_loss(batch, mode="val")
 
-    def predict_step(self, batch, batch_idx=0):
-        return self._calculate_loss(batch, mode="predict")["logits"]
-
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.parameters(), lr=self.config.lr)
         return optimizer
@@ -106,3 +103,31 @@ class GPT(LightningModule):
         context = torch.zeros((1, 1), dtype=torch.long, device=self.device)
         generated_text = self.trainer.datamodule.decode(self.generate(context, max_new_tokens=max_new_tokens)[0].tolist())
         self.trainer.logger._experiment.add_text("Generated sample", generated_text, epoch)
+
+    def infinite_generation(
+        self,
+        decode_fn,
+        temperature: float = 1.0,
+    ):
+        """
+        Smooth character-by-character text generation using a generator.
+
+        Args:
+            temperature: Sampling temperature for controlling randomness.
+        Yields:
+            Generated characters or text incrementally.
+        """
+        context = torch.zeros((1, 1), dtype=torch.long, device=self.device)
+        block_size = self.config.block_size
+
+        while True:
+            context_cond = context[:, -block_size:]
+            logits = self(context_cond)[:, -1, :]  # Get logits for the last position
+
+            probs = F.softmax(logits / temperature, dim=-1)
+            next_token = torch.multinomial(probs, num_samples=1)  # Sample the next token
+
+            context = torch.cat((context, next_token), dim=1)
+            decoded_text = decode_fn(next_token[0].tolist())
+
+            yield decoded_text
