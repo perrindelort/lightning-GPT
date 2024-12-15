@@ -16,6 +16,7 @@ class ConfigParser(ArgumentParser):
         self.add_argument("--seed", type=lambda value: None if value == "None" else value, default=config.get("seed"), help="Seed for reproducibility. Input 'None' for no seeding.")
 
         self.add_argument("--model", type=str, choices=["GPT", "BigramLanguageModel"], default=config.get("model"))
+        self.add_argument("--save_weights_only", action="store_true")
 
         self.add_argument("--batch_size", type=int, default=config.get("batch_size"))
         self.add_argument("--block_size", type=int, default=config.get("block_size"))

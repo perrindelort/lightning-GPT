@@ -52,6 +52,7 @@ if __name__ == "__main__":
             filename="{epoch}-{val_loss:.3f}",
             monitor="val_loss",
             verbose=True,
+            save_weights_only=config.save_weights_only,
         ),
         RichModelSummary(),
         RichProgressBar(),
