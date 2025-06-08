@@ -1,0 +1,58 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lightning-gpt"
+version = "0.1.0"
+description = "A PyTorch Lightning GPT project"
+requires-python = ">=3.12.3"
+dependencies = [
+    "lightning==2.4.0",
+    "lightning[pytorch-extra]",
+    "jsonargparse[signatures]",
+    "torch==2.5.1",
+    "requests==2.32.3",
+    "einops==0.8.1",
+    "tensorboardx==2.6.2.2",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+include = ["lightning_gpt*"]
+
+[tool.black]
+line-length = 88
+target-version = ["py312"]
+
+[tool.isort]
+profile = "black"
+line_length = 88
+known_first_party = ["lightning_gpt"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py312"
+select = [
+  "A",  # flake8-annotations (type hint style)
+  "B",  # bugbear (code quality)
+  "C",  # mccabe complexity
+  "D",  # pydocstyle (docstrings)
+  "E",  # pycodestyle errors
+  "F",  # pyflakes (syntax errors, undefined names)
+  "I",  # isort (import sorting)
+  "N",  # pep8-naming (naming conventions)
+  "Q",  # flake8-quotes (quotes style)
+  "S",  # bandit (security)
+  "T",  # flake8-print (print statements)
+  "W",  # pycodestyle warnings
+]
+extend-ignore = ["N812", "S113", "D401", "T201", "D104", "N806", "D205"]
+
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+follow_untyped_imports = true
+warn_unused_configs = true
+mypy_path = "src"
