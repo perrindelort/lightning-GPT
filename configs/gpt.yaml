@@ -1,0 +1,54 @@
+seed_everything: 42
+
+data:
+  class_path: "lightning_gpt.data_modules.TinyShakeSpeare"
+  init_args:
+    data_dir: "./data"
+    batch_size: 128
+    block_size: 264
+
+model:
+  class_path: "lightning_gpt.modules.GPT"
+  init_args:
+    n_embeddings: 384
+    n_heads: 6
+    n_layers: 6
+    dropout: 0.2
+    optimizer:
+      class_path: torch.optim.AdamW
+      init_args:
+        lr: 0.001
+    scheduler:
+      class_path: torch.optim.lr_scheduler.ReduceLROnPlateau
+      init_args:
+        patience: 2
+        factor: 0.5
+
+
+trainer:
+  max_epochs: -1
+  inference_mode: true
+  limit_train_batches: 0.02
+  logger:
+    class_path: "lightning.pytorch.loggers.tensorboard.TensorBoardLogger"
+    init_args:
+      name: "GPT"
+      save_dir: "./logs"
+  callbacks:
+    - class_path: "lightning.pytorch.callbacks.EarlyStopping"
+      init_args:
+        monitor: "val_loss"
+        patience: 10
+        verbose: true
+    - class_path: "lightning.pytorch.callbacks.ModelCheckpoint"
+      init_args:
+        filename: "{epoch}-{val_loss:.3f}"
+        monitor: "val_loss"
+        verbose: true
+        save_weights_only: true
+    - class_path: "lightning.pytorch.callbacks.LearningRateMonitor"
+      init_args:
+        log_momentum: true
+        log_weight_decay: true
+
+ckpt: checkpoints/GPT.ckpt

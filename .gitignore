@@ -1,7 +1,8 @@
 *.code-workspace
-*.toml
-/*/__pycache__/
+/**/__pycache__/
 *.ipynb
-
+logs/
 data/
-results/
+
+/.mypy_cache
+*.egg-info
