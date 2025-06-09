@@ -12,26 +12,22 @@ Obviously not ! My goal here was to deepen my knowledge and learn new things ! T
 # Showcase
 
 As GPT first of its name isn't very efficient, its output is gibberish — Shakespearean-style gibberishin, verily, due to our data ! — though it's still oddly entertaining to watch.
-<div style="display: flex; justify-content: center; gap: 10px; align-items: center;">
-    <figure style="text-align: center; width: 50%;">
-        <img src="assets/output_evolution.gif" style="width: 100%;"/>
-        <figcaption>Model's generation throughout the epochs !</figcaption>
-    </figure>
-    <figure style="text-align: center; width: 50%;">
-        <video style="width: 100%;" controls autoplay muted loop>
-            <source src="assets/infinite_streaming_output.mp4" type="video/mp4" />
-            Your browser does not support the video tag.
-        </video>
-        <figcaption>The infinite generation streamed to the console</figcaption>
-    </figure>
-</div>
 
+## Infinite generation
+The infinite generation streamed to the console
+
+https://github.com/user-attachments/assets/d70bb25c-e569-48c9-b131-994fbfbab376
+
+## Output evolution
+<p align="center">
+  <img src="assets/output_evolution.gif" alt="Demo GIF" />
+</p>
 
 # Getting started
 ## Installing the package
 Create a venv and run
 
- ```pip install -e .```
+ ```pip install .```
 
 ## Training a model
 
